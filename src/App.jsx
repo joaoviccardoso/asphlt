@@ -5,6 +5,7 @@ import CollectionCarousel from './components/CollectionCarousel/CollectionCarous
 import Pillars from './components/Pillars/Pillars.jsx';
 import ProductFeature from './components/ProductFeature/ProductFeature.jsx';
 import StoreExperience from './components/StoreExperience/StoreExperience.jsx';
+import Footer from './components/Footer/Footer.jsx';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <ProductFeature />
         <StoreExperience />
       </main>
+      <Footer />
     </SmoothScrollProvider>
   );
 }
