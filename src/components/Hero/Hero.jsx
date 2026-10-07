@@ -3,11 +3,12 @@ import styles from './Hero.module.css';
 import { gsap, useGSAP } from '../../lib/gsap.js';
 import { HERO } from '../../data/content.js';
 
-export default function Hero() {
+export default function Hero({ ready = true }) {
   const root = useRef(null);
 
   useGSAP(
     () => {
+      if (!ready) return; // aguarda o Preloader
       const mm = gsap.matchMedia();
 
       mm.add('(prefers-reduced-motion: no-preference)', () => {
@@ -31,7 +32,7 @@ export default function Hero() {
 
       return () => mm.revert();
     },
-    { scope: root }
+    { scope: root, dependencies: [ready] }
   );
 
   return (
