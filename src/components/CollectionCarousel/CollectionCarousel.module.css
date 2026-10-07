@@ -148,15 +148,69 @@
   background: var(--ink);
 }
 
+/* Botão "ver tudo" (antes era <a>) */
 .all {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
   font-family: var(--font-body);
   font-style: italic;
   font-size: 0.9375rem;
-  text-decoration: none;
   white-space: nowrap;
 }
 
 .all:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+/* ---------- Modo grade ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* mobile: máx. 2 por linha */
+  overflow: visible;
+  scroll-snap-type: none;
+  cursor: default;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+
+.grid .card {
+  flex: none;
+  width: 100%; /* aspect-ratio: 3/4 do .card é mantido */
+  scroll-snap-align: none;
+}
+
+/* Cards menores no mobile: ajusta textos para não estourar */
+.grid .cardInfo {
+  padding: 2rem 0.75rem 0.75rem;
+}
+
+.grid .cardInfo h3 {
+  font-size: clamp(1.05rem, 4.5vw, 1.4rem);
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grid .cardInfo {
+    padding: 3rem 1rem 1rem;
+  }
+  .grid .cardInfo h3 {
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+  }
+}
+
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)); /* ocupa toda a largura útil */
+  }
+}
+
+/* Sem a barra de progresso, o botão fica alinhado à direita */
+.footGrid {
+  justify-content: flex-end;
 }

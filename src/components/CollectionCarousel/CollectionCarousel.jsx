@@ -7,8 +7,10 @@ export default function CollectionCarousel() {
   const root = useRef(null);
   const track = useRef(null);
   const drag = useRef({ active: false, startX: 0, startLeft: 0 });
+  const firstRender = useRef(true);
   const [scroll, setScroll] = useState({ p: 0, thumb: 0.3 });
   const [dragging, setDragging] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const update = useCallback(() => {
     const el = track.current;
@@ -26,6 +28,14 @@ export default function CollectionCarousel() {
     return () => window.removeEventListener('resize', update);
   }, [update]);
 
+  // Ao voltar para o carrossel, recalcula o progresso
+  useEffect(() => {
+    if (!expanded && track.current) {
+      track.current.scrollLeft = 0;
+      update();
+    }
+  }, [expanded, update]);
+
   const step = (dir) => {
     const el = track.current;
     const card = el.querySelector('[data-card]');
@@ -33,9 +43,9 @@ export default function CollectionCarousel() {
     el.scrollBy({ left: dir * (card.offsetWidth + gap), behavior: 'smooth' });
   };
 
-  // Arrastar com o mouse (touch usa o scroll nativo)
+  // Arrastar com o mouse (touch usa o scroll nativo) — só no modo carrossel
   const onPointerDown = (e) => {
-    if (e.pointerType !== 'mouse') return;
+    if (expanded || e.pointerType !== 'mouse') return;
     const el = track.current;
     drag.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft };
     setDragging(true);
@@ -52,10 +62,12 @@ export default function CollectionCarousel() {
   };
 
   const onKeyDown = (e) => {
+    if (expanded) return;
     if (e.key === 'ArrowRight') step(1);
     if (e.key === 'ArrowLeft') step(-1);
   };
 
+  // Animação de entrada da página (só na 1ª renderização)
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -74,6 +86,34 @@ export default function CollectionCarousel() {
     { scope: root }
   );
 
+  // Animação ao alternar entre carrossel e grade (pula a 1ª renderização)
+  useGSAP(
+    () => {
+      if (firstRender.current) {
+        firstRender.current = false;
+        return;
+      }
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(
+          '[data-card]',
+          { autoAlpha: 0, y: 24, xPercent: 0 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.7,
+            stagger: 0.05,
+            ease: 'power3.out',
+            overwrite: 'auto',
+            clearProps: 'transform,opacity,visibility',
+          }
+        );
+      });
+      return () => mm.revert();
+    },
+    { scope: root, dependencies: [expanded] }
+  );
+
   const atStart = scroll.p <= 0.01;
   const atEnd = scroll.p >= 0.99;
 
@@ -83,28 +123,32 @@ export default function CollectionCarousel() {
         <h2 id="colecao-titulo" className={styles.title}>
           Nova coleção
         </h2>
-        <div className={styles.arrows}>
-          <button type="button" onClick={() => step(-1)} disabled={atStart} aria-label="Peça anterior">
-            ←
-          </button>
-          <button type="button" onClick={() => step(1)} disabled={atEnd} aria-label="Próxima peça">
-            →
-          </button>
-        </div>
+        {!expanded && (
+          <div className={styles.arrows}>
+            <button type="button" onClick={() => step(-1)} disabled={atStart} aria-label="Peça anterior">
+              ←
+            </button>
+            <button type="button" onClick={() => step(1)} disabled={atEnd} aria-label="Próxima peça">
+              →
+            </button>
+          </div>
+        )}
       </div>
 
       <div
         ref={track}
-        className={`${styles.track} ${dragging ? styles.dragging : ''}`}
-        onScroll={update}
+        className={[styles.track, expanded && styles.grid, dragging && styles.dragging]
+          .filter(Boolean)
+          .join(' ')}
+        onScroll={expanded ? undefined : update}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onKeyDown={onKeyDown}
-        tabIndex={0}
+        tabIndex={expanded ? undefined : 0}
         role="region"
-        aria-label="Carrossel da nova coleção"
+        aria-label={expanded ? 'Todas as peças da nova coleção' : 'Carrossel da nova coleção'}
       >
         {PRODUCTS.map((p) => (
           <article key={p.id} className={styles.card} data-card>
@@ -118,21 +162,29 @@ export default function CollectionCarousel() {
         ))}
       </div>
 
-      <div className={styles.foot}>
-        <div
-          className={styles.progress}
-          style={{ '--p': scroll.p, '--w': `${scroll.thumb * 100}%` }}
-          role="progressbar"
-          aria-label="Progresso do carrossel"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(scroll.p * 100)}
+      <div className={`${styles.foot} ${expanded ? styles.footGrid : ''}`}>
+        {!expanded && (
+          <div
+            className={styles.progress}
+            style={{ '--p': scroll.p, '--w': `${scroll.thumb * 100}%` }}
+            role="progressbar"
+            aria-label="Progresso do carrossel"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(scroll.p * 100)}
+          >
+            <span className={styles.thumb} />
+          </div>
+        )}
+        <button
+          type="button"
+          className={styles.all}
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-controls="colecao"
         >
-          <span className={styles.thumb} />
-        </div>
-        <a href="#colecao" className={styles.all}>
-          (ver tudo)
-        </a>
+          {expanded ? '(ver menos)' : '(ver tudo)'}
+        </button>
       </div>
     </section>
   );
